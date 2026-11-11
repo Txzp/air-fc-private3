@@ -15,11 +15,13 @@ Bot de Discord para un solo server. **Made By: zk (k940)**
 - 10 menciones (sumando mensajes) en 10 s → silencio **60 s**.
 - Borra invitaciones de otros servers, muros de raid y webhooks que spamean.
 
-**👋 Bienvenida y despedida** — tarjeta con banner, foto y nombre en sus canales.
+**👋 Bienvenida y despedida** — imágenes de Shadow FC (`assets/img/welcome.png` y `bye.png`) con la foto y el nombre del usuario encima. Soporta nombres fancy (𝕸𝖊𝖑𝖆𝖓𝖞, 𝚂𝚑𝚊𝚍𝚘𝚠, ミ 彡, ꧁꧂).
 
 **🎭 Roles y autorol** — al arrancar crea **Manager** (todos los permisos), **Support** (moderación) y **Member** (normal). Quien entra recibe Member.
 
-**📈 Niveles** — 15 XP cada 3 mensajes y 5 XP por minuto en vc. `/rank` (tarjeta) y `/top`.
+**📈 Niveles** — 15 XP cada 3 mensajes y 5 XP por minuto en vc. Avisos de nivel con tarjeta en su canal. `/rank` y `/top` solo en el canal de rank, ocultos y se borran a los 15 s.
+
+**🔊 Vc temporales** — `➕┆𝗩𝗰 𝗖𝗿𝗲𝗮𝘁𝗼𝗿`: entras y se crea tu vc. Panel **Vc Own** (nombre/status, límite, ocultar, sacar, borrar). Se borra al quedar vacío. `!vcpanel` vuelve a sacar el panel.
 
 **📢 Anuncios** — `/ann` abre un formulario (Title, Description, Ping) y manda `# Title` + **Description**. Solo Manager/Support.
 

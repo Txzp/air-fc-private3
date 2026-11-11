@@ -1,12 +1,12 @@
 // Niveles: XP cada 3 mensajes y por cada minuto en vc. /rank (tarjeta) y /top
 const { Events, SlashCommandBuilder, AttachmentBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
-require('./welcome'); // registra fuentes
+const { FONT_STACK } = require('./welcome'); // registra fuentes
 const cfg = require('../config');
 const db = require('../discordStore');
 
 const L = cfg.levels;
-const FONT = 'Poppins, DejaVu, Emoji, sans-serif';
+const FONT = FONT_STACK;
 const users = () => db.get('xp', {}); // userId -> { xp, msgs, lastMsg, lastCh }
 
 // XP para pasar del nivel n al n+1 (curva tipo MEE6)
@@ -41,10 +41,13 @@ async function announce(guild, userId, level, channelId) {
   const chId = L.levelUpChannelId || channelId;
   if (!chId) return;
   const ch = await guild.channels.fetch(chId).catch(() => null);
-  if (!ch?.isTextBased()) return;
+  const member = await guild.members.fetch(userId).catch(() => null);
+  if (!ch?.isTextBased() || !member) return;
+  const total = users()[userId]?.xp || 0;
+  const png = await renderRank(member, { ...levelInfo(total), total, rank: rankOf(userId) });
   await ch.send({
-    content: `<@${userId}>`,
-    embeds: [new EmbedBuilder().setColor(0xf1c40f).setDescription(`🎉 <@${userId}> subió a **nivel ${level}**! Sigue así 🔥`)],
+    content: `🎉 ${member} subió a **nivel ${level}**! Sigue así 🔥`,
+    files: [new AttachmentBuilder(png, { name: 'levelup.png' })],
     allowedMentions: { users: [userId] },
   });
 }
@@ -178,16 +181,25 @@ const defs = [
 ].map((c) => c.toJSON());
 const names = ['rank', 'top'];
 
+const autoDelete = (i) => setTimeout(() => i.deleteReply().catch(() => {}), L.replyDeleteMs);
+
 async function handle(i) {
+  if (L.rankChannelId && i.channelId !== L.rankChannelId) {
+    return i.reply({ content: `Usa este comando en <#${L.rankChannelId}> 👀`, flags: MessageFlags.Ephemeral });
+  }
   if (i.commandName === 'rank') {
-    await i.deferReply();
+    await i.deferReply({ flags: MessageFlags.Ephemeral });
     const user = i.options.getUser('usuario') || i.user;
     const member = await i.guild.members.fetch(user.id).catch(() => null);
-    if (!member) return i.editReply('Ese usuario no está en el server.');
+    if (!member) {
+      await i.editReply('Ese usuario no está en el server.');
+      return autoDelete(i);
+    }
     const total = users()[user.id]?.xp || 0;
     const info = levelInfo(total);
     const png = await renderRank(member, { ...info, total, rank: rankOf(user.id) });
-    return i.editReply({ files: [new AttachmentBuilder(png, { name: 'rank.png' })] });
+    await i.editReply({ files: [new AttachmentBuilder(png, { name: 'rank.png' })] });
+    return autoDelete(i);
   }
   if (i.commandName === 'top') {
     const top = Object.entries(users())
@@ -196,16 +208,17 @@ async function handle(i) {
       .slice(0, 10);
     const medals = ['🥇', '🥈', '🥉'];
     const lines = top.map(([id, v], n) => `${medals[n] || `**${n + 1}.**`} <@${id}> — Nivel **${levelInfo(v.xp).level}** · ${v.xp.toLocaleString('es')} XP`);
-    return i.reply({
+    await i.reply({
       embeds: [
         new EmbedBuilder()
           .setColor(0xf1c40f)
           .setTitle(`🏆 Top niveles de ${i.guild.name}`)
-          .setDescription(lines.join('\n') || 'Nadie tiene XP todavía 😭')
-          .setFooter({ text: cfg.creatorTag }),
+          .setDescription(lines.join('\n') || 'Nadie tiene XP todavía 😭'),
       ],
       allowedMentions: { parse: [] },
+      flags: MessageFlags.Ephemeral,
     });
+    return autoDelete(i);
   }
 }
 

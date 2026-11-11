@@ -11,6 +11,7 @@ const roles = require('./modules/roles');
 const levels = require('./modules/levels');
 const ann = require('./modules/ann');
 const commands = require('./modules/commands');
+const tempvc = require('./modules/tempvc');
 
 if (!cfg.token) {
   console.error('Falta DISCORD_TOKEN en las variables de entorno.');
@@ -48,6 +49,7 @@ roles.init(client);
 levels.init(client);
 ann.init(client);
 commands.init(client);
+tempvc.init(client);
 
 async function resolveGuild(c) {
   if (cfg.guildId) return c.guilds.fetch(cfg.guildId).catch(() => null);
@@ -101,6 +103,7 @@ client.once(Events.ClientReady, async (c) => {
   await antinuke.init(c, guild);
   await commands.register(guild).catch((e) => console.error('[bot] Comandos:', e.message));
   levels.start(guild);
+  await tempvc.start(guild).catch((e) => console.error('[tempvc]', e.message));
   ready = true;
 
   const me = guild.members.me;

@@ -31,7 +31,7 @@ module.exports = {
   welcome: {
     channelId: process.env.WELCOME_CHANNEL_ID || '1570098657305563227',
     goodbyeChannelId: process.env.GOODBYE_CHANNEL_ID || '1570098705686732852',
-    serverName: process.env.SERVER_NAME || '', // vacío = nombre real del server
+    serverName: process.env.SERVER_NAME || '𝚂𝚑𝚊𝚍𝚘𝚠 𝙵𝙲',
     emojiName: process.env.WELCOME_EMOJI || 'hola',
   },
 
@@ -43,7 +43,15 @@ module.exports = {
     xpPerMessages: 3, // cada 3 mensajes...
     xpForMessages: num(process.env.XP_PER_3_MESSAGES, 15), // ...da 15 XP
     xpPerVcMinute: num(process.env.XP_PER_VC_MINUTE, 5), // 5 XP por minuto en vc
-    levelUpChannelId: process.env.LEVELUP_CHANNEL_ID || '', // vacío = en el mismo canal donde subió
+    levelUpChannelId: process.env.LEVELUP_CHANNEL_ID || '1570133581890846853', // avisos de subir de nivel (con tarjeta)
+    rankChannelId: process.env.RANK_CHANNEL_ID || '1570102348611846336', // donde se usan /rank y /top
+    replyDeleteMs: 15_000, // /rank y /top se borran a los 15 s
+  },
+
+  // Vc temporales propios (reemplazo de TempVoice)
+  tempVc: {
+    categoryId: process.env.TEMPVC_CATEGORY_ID || '1567736117598490696',
+    creatorName: '➕┆𝗩𝗰 𝗖𝗿𝗲𝗮𝘁𝗼𝗿',
   },
 
   antiSpam: {
