@@ -1,0 +1,18 @@
+{
+  "name": "airfc",
+  "version": "1.0.0",
+  "description": "AirFc — bot de Discord: welcome, niveles, autorol, anuncios, anti-nuke y anti-spam. Made By: zk (k940)",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.65",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5"
+  },
+  "license": "MIT"
+}
