@@ -48,6 +48,12 @@ module.exports = {
     replyDeleteMs: 15_000, // /rank y /top se borran a los 15 s
   },
 
+  // Logs del servidor (entradas/salidas, roles, canales, mensajes, voz...) — mismo canal de logs
+  serverLogs: {
+    channelId: process.env.SERVER_LOG_CHANNEL_ID || process.env.LOG_CHANNEL_ID || '1570120942439506143',
+    ignoreChannels: list(process.env.SERVER_LOG_IGNORE_CHANNELS),
+  },
+
   // Vc temporales propios (reemplazo de TempVoice)
   tempVc: {
     categoryId: process.env.TEMPVC_CATEGORY_ID || '1567736117598490696',

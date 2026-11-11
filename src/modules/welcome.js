@@ -161,80 +161,17 @@ async function renderCard(member, opts = {}) {
 
 const serverName = (guild) => cfg.welcome.serverName || guild.name;
 
-/* ---------- Tarjetas con las imágenes del server ---------- */
-const IMG = path.join(__dirname, '..', '..', 'assets', 'img');
-const bgCache = {};
-async function bg(kind) {
-  if (!bgCache[kind]) bgCache[kind] = await loadImage(path.join(IMG, `${kind}.png`));
-  return bgCache[kind];
-}
-
-// Dónde va la foto y el nombre en cada imagen (escala 1000x1000) para no tapar su texto
-const LAYOUT = {
-  welcome: { avatar: { x: 500, y: 392, r: 82 }, nameY: 935, ring: ['#c084fc', '#7c3aed', '#c084fc'], glow: '#a855f7' },
-  bye: { avatar: { x: 868, y: 150, r: 92 }, nameY: 955, ring: ['#86efac', '#16a34a', '#86efac'], glow: '#22c55e' },
-};
-
-async function renderImageCard(member, kind) {
-  const S = 1000;
-  const L = LAYOUT[kind];
-  const c = createCanvas(S, S);
-  const ctx = c.getContext('2d');
-  ctx.drawImage(await bg(kind), 0, 0, S, S);
-
-  // foto de perfil con aro brillante
-  const { x, y, r } = L.avatar;
-  const avatar = await loadImage(member.displayAvatarURL({ size: 512, extension: 'png', forceStatic: true })).catch(() => null);
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(x, y, r + 8, 0, Math.PI * 2);
-  const rg = ctx.createLinearGradient(x - r, y - r, x + r, y + r);
-  L.ring.forEach((col, i) => rg.addColorStop(i / (L.ring.length - 1), col));
-  ctx.fillStyle = rg;
-  ctx.shadowColor = L.glow;
-  ctx.shadowBlur = 40;
-  ctx.fill();
-  ctx.restore();
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.clip();
-  if (avatar) ctx.drawImage(avatar, x - r, y - r, r * 2, r * 2);
-  ctx.restore();
-
-  // nombre en una píldora oscura abajo
-  const name = member.displayName || member.user.globalName || member.user.username;
-  let size = 46;
-  ctx.font = `${size}px ${FONT_STACK}`;
-  while (ctx.measureText(name).width > S - 220 && size > 24) ctx.font = `${(size -= 2)}px ${FONT_STACK}`;
-  const tw = ctx.measureText(name).width;
-  const ph = size + 30;
-  roundRect(ctx, S / 2 - tw / 2 - 34, L.nameY - ph / 2, tw + 68, ph, ph / 2);
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fill();
-  ctx.strokeStyle = L.glow;
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
-  ctx.fillStyle = '#ffffff';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-  ctx.shadowBlur = 10;
-  ctx.fillText(name, S / 2, L.nameY + 2);
-
-  return c.encode('jpeg', 90);
-}
-
+// Tarjeta limpia (banner del usuario + foto + nombre), igual que AirProtect
 async function onJoin(member) {
   if (member.guild.id !== cfg.guildId || member.user.bot) return;
   const ch = await member.guild.channels.fetch(cfg.welcome.channelId).catch(() => null);
   if (!ch?.isTextBased()) return;
   const emoji = member.guild.emojis.cache.find((e) => e.name === cfg.welcome.emojiName);
-  const img = await renderImageCard(member, 'welcome');
+  const png = await renderCard(member);
   await ch.send({
     content: `${member} **Bienvenid@ a ${serverName(member.guild)}** ${emoji ? emoji.toString() : '👋'}`,
-    embeds: [new EmbedBuilder().setColor(0x8b5cf6).setImage('attachment://welcome.jpg')],
-    files: [new AttachmentBuilder(img, { name: 'welcome.jpg' })],
+    embeds: [new EmbedBuilder().setColor(0x8b5cf6).setImage('attachment://welcome.png')],
+    files: [new AttachmentBuilder(png, { name: 'welcome.png' })],
     allowedMentions: { users: [member.id] },
   });
 }
@@ -247,12 +184,13 @@ async function onLeave(member) {
     user: member.user,
     displayName: member.displayName || member.user.globalName || member.user.username,
     displayAvatarURL: (o) => member.user.displayAvatarURL(o),
+    guild: member.guild,
   };
-  const img = await renderImageCard(fake, 'bye');
+  const png = await renderCard(fake, { subtitle: `Ahora somos ${member.guild.memberCount}` });
   await ch.send({
     content: `**${fake.displayName}** se fue de **${serverName(member.guild)}** 💔`,
-    embeds: [new EmbedBuilder().setColor(0x22c55e).setImage('attachment://bye.jpg')],
-    files: [new AttachmentBuilder(img, { name: 'bye.jpg' })],
+    embeds: [new EmbedBuilder().setColor(0x4f545c).setImage('attachment://bye.png')],
+    files: [new AttachmentBuilder(png, { name: 'bye.png' })],
     allowedMentions: { parse: [] },
   });
 }
@@ -268,4 +206,4 @@ function init(client) {
   client.on(Events.GuildMemberRemove, (m) => onLeave(m).catch((e) => console.error('[goodbye]', e)));
 }
 
-module.exports = { init, renderCard, renderImageCard, FONT_STACK };
+module.exports = { init, renderCard, FONT_STACK };

@@ -15,7 +15,9 @@ Bot de Discord para un solo server. **Made By: zk (k940)**
 - 10 menciones (sumando mensajes) en 10 s → silencio **60 s**.
 - Borra invitaciones de otros servers, muros de raid y webhooks que spamean.
 
-**👋 Bienvenida y despedida** — imágenes de Shadow FC (`assets/img/welcome.png` y `bye.png`) con la foto y el nombre del usuario encima. Soporta nombres fancy (𝕸𝖊𝖑𝖆𝖓𝖞, 𝚂𝚑𝚊𝚍𝚘𝚠, ミ 彡, ꧁꧂).
+**👋 Bienvenida y despedida** — tarjeta limpia con el banner del usuario, su foto y su nombre. Soporta nombres fancy (𝕸𝖊𝖑𝖆𝖓𝖞, 𝚂𝚑𝚊𝚍𝚘𝚠, ミ 彡, ꧁꧂).
+
+**📜 Logs** — en el canal de logs: seguridad (spam, nuke, raid) + todo el server (entradas con invitación usada, salidas, roles, canales, mensajes borrados/editados, voz, baneos, etc.).
 
 **🎭 Roles y autorol** — al arrancar crea **Manager** (todos los permisos), **Support** (moderación) y **Member** (normal). Quien entra recibe Member.
 
