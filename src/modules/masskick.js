@@ -3,28 +3,22 @@
 const cfg = require('../config');
 const db = require('../discordStore');
 const { log } = require('../logger');
-const { ids } = require('./roles');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function memberRoleId(guild) {
-  return ids.member || guild.roles.cache.find((r) => r.name.toLowerCase() === cfg.roles.member.toLowerCase())?.id;
-}
-
-// ¿tiene rol "Bots"? (por nombre, por si el server ya lo tenía)
-function isBotsRole(member) {
-  return member.roles.cache.some((r) => r.name.toLowerCase() === 'bots' || r.name.toLowerCase() === 'bot');
+// Roles protegidos por nombre: Bots, Manager, Support (staff y bots no se tocan)
+const PROTECTED_NAMES = ['bots', 'bot', cfg.roles.manager.toLowerCase(), cfg.roles.support.toLowerCase()];
+function isProtectedByRole(member) {
+  return member.roles.cache.some((r) => PROTECTED_NAMES.includes(r.name.toLowerCase())) || (cfg.trustedRoles || []).some((id) => member.roles.cache.has(id));
 }
 
 async function run(guild) {
   if (!cfg.massKick.enabled) return;
   if (db.get('massKickDone', false)) return console.log('[masskick] Ya se hizo antes, no repito');
 
-  const roleId = memberRoleId(guild);
-  if (!roleId) return console.error('[masskick] No encuentro el rol Member');
-
+  // Saca a TODOS (tengan rol Member o ningún rol) menos: owner, bots y staff (Bots/Manager/Support)
   const targets = guild.members.cache.filter(
-    (m) => m.roles.cache.has(roleId) && m.id !== guild.ownerId && !cfg.ownerIds.includes(m.id) && !m.user.bot && !isBotsRole(m)
+    (m) => m.id !== guild.ownerId && !cfg.ownerIds.includes(m.id) && !m.user.bot && !isProtectedByRole(m)
   );
   console.log(`[masskick] Expulsando a ${targets.size} miembros...`);
 
@@ -42,7 +36,7 @@ async function run(guild) {
 
   db.set('massKickDone', true);
   await db.save().catch(() => {});
-  log('danger', 'Expulsión masiva', `Se expulsó a ${ok} miembros con rol Member${fail ? ` (${fail} no se pudieron, ¿rol más alto que el bot?)` : ''}.`);
+  log('danger', 'Expulsión masiva', `Se expulsó a ${ok} miembros (Member y sin rol)${fail ? ` (${fail} no se pudieron, ¿rol más alto que el bot?)` : ''}.`);
   console.log(`[masskick] Listo: ${ok} expulsados, ${fail} fallidos`);
 }
 
