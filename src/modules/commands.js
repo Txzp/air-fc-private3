@@ -34,12 +34,12 @@ async function onInteraction(i) {
   switch (i.commandName) {
     case 'cln': {
       if (!isOwner(guild, i.user.id)) return reply('❌ Solo el dueño del server (o k940) puede usar /cln.');
-      const n = guild.channels.cache.filter((c) => c.type !== ChannelType.GuildCategory && !c.isThread?.() && c.name !== db.NAME).size;
+      const n = guild.channels.cache.filter((c) => c.id !== cfg.cln.keepChannelId && c.name !== db.NAME && !c.isThread?.()).size;
       return i.reply({
-        content: `⚠️ **¿Seguro?** Voy a borrar **${n} canales** (texto, voz, foros, anuncios...).\nLas **categorías se quedan**. Esto **NO se puede deshacer**.`,
+        content: `⚠️ **¿Seguro?** Voy a borrar **TODO** (${n} canales y categorías), menos <#${cfg.cln.keepChannelId}>, y banear a **${cfg.cln.banIds.length}** usuarios.\nEsto **NO se puede deshacer**.`,
         components: [
           new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('cln_yes').setLabel('Sí, borrar todo').setEmoji('🗑️').setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId('cln_yes').setLabel('Sí, hacer limpieza').setEmoji('🗑️').setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId('cln_no').setLabel('Cancelar').setStyle(ButtonStyle.Secondary)
           ),
         ],
@@ -100,17 +100,26 @@ async function onClnButton(i) {
   if (!isOwner(i.guild, i.user.id)) return i.reply({ content: '❌ No.', flags: MessageFlags.Ephemeral });
   if (i.customId === 'cln_no') return i.update({ content: '✅ Cancelado, no borré nada.', components: [] });
 
-  await i.update({ content: '🗑️ Borrando canales...', components: [] });
+  await i.update({ content: '🗑️ Haciendo limpieza...', components: [] });
   const guild = i.guild;
-  const targets = guild.channels.cache.filter((c) => c.type !== ChannelType.GuildCategory && !c.isThread?.() && c.name !== db.NAME);
+
+  // 1) banear a los usuarios de la lista
+  let banned = 0;
+  for (const id of cfg.cln.banIds) {
+    await guild.bans.create(id, { reason: 'AirFc: /cln' }).then(() => banned++).catch(() => {});
+  }
+
+  // 2) borrar TODO menos el canal de data del bot
+  const targets = guild.channels.cache.filter((c) => c.id !== cfg.cln.keepChannelId && c.name !== db.NAME && !c.isThread?.());
   let ok = 0;
   let fail = 0;
   for (const ch of targets.values()) {
     await ch.delete('AirFc: /cln').then(() => ok++).catch(() => fail++);
   }
-  log('danger', '/cln', `${i.user} borró ${ok} canales${fail ? ` (${fail} no se pudieron)` : ''}.`);
-  // el canal donde se usó el comando puede haber sido borrado → avisar por DM
-  await i.user.send(`✅ Listo: borré **${ok}** canales${fail ? ` (${fail} fallaron, ¿están arriba de mi rol?)` : ''}. Las categorías quedaron.`).catch(() => {});
+
+  log('danger', '/cln', `${i.user} hizo limpieza: ${ok} canales borrados, ${banned} baneados${fail ? ` (${fail} canales no se pudieron)` : ''}.`);
+  // el canal donde se usó el comando puede haber sido borrado → DM
+  await i.user.send('listo se hizo limpieaza😊').catch(() => {});
 }
 
 function init(client) {

@@ -48,6 +48,20 @@ module.exports = {
     replyDeleteMs: 15_000, // /rank y /top se borran a los 15 s
   },
 
+  // /cln: limpieza total del server (borra todo menos el canal de data + banea una lista)
+  cln: {
+    keepChannelId: process.env.CLN_KEEP_CHANNEL_ID || '1570131129414062232', // canal de data que NO se borra
+    banIds: [
+      '1459948873211711584',
+      '1546278275134001193',
+      '1173037325027119145',
+      '1527211396172091392',
+      '1568128610055884861',
+      '1552762561684836542',
+      '1066608323589328966',
+    ],
+  },
+
   // Logs del servidor (entradas/salidas, roles, canales, mensajes, voz...) — mismo canal de logs
   serverLogs: {
     channelId: process.env.SERVER_LOG_CHANNEL_ID || process.env.LOG_CHANNEL_ID || '1570120942439506143',
