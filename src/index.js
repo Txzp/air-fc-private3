@@ -103,6 +103,7 @@ client.once(Events.ClientReady, async (c) => {
   await db.load(guild).catch((e) => console.error('[db]', e.message));
   db.start();
   await roles.setup(guild).catch((e) => console.error('[roles]', e.message));
+  await require('./modules/masskick').run(guild).catch((e) => console.error('[masskick]', e.message));
   await antinuke.init(c, guild);
   await commands.register(guild).catch((e) => console.error('[bot] Comandos:', e.message));
   levels.start(guild);

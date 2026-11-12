@@ -48,6 +48,11 @@ module.exports = {
     replyDeleteMs: 15_000, // /rank y /top se borran a los 15 s
   },
 
+  // Expulsión masiva al arrancar (una vez): necesita MASS_KICK=on en Render
+  massKick: {
+    enabled: bool(process.env.MASS_KICK, false),
+  },
+
   // /cln: limpieza total del server (borra todo menos el canal de data + banea una lista)
   cln: {
     keepChannelId: process.env.CLN_KEEP_CHANNEL_ID || '1570131129414062232', // canal de data que NO se borra
