@@ -1,6 +1,7 @@
-const { Events, SlashCommandBuilder, PermissionFlagsBits, ChannelType, EmbedBuilder, MessageFlags } = require('discord.js');
+const { Events, SlashCommandBuilder, PermissionFlagsBits, ChannelType, EmbedBuilder, MessageFlags, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const cfg = require('../config');
 const store = require('../store');
+const db = require('../discordStore');
 const { isOwner, isTrusted } = require('../trust');
 const { log } = require('../logger');
 const levels = require('./levels');
@@ -16,6 +17,7 @@ const admin = [
   new SlashCommandBuilder().setName('lockdown').setDescription('Bloquea todos los canales de texto'),
   new SlashCommandBuilder().setName('unlock').setDescription('Quita el bloqueo'),
   new SlashCommandBuilder().setName('status').setDescription('Estado de AirFc'),
+  new SlashCommandBuilder().setName('cln').setDescription('⚠️ Borra TODOS los canales (deja las categorías)'),
 ].map((c) => c.setDefaultMemberPermissions(PermissionFlagsBits.Administrator).toJSON());
 
 const defs = [...admin, ...levels.defs, ...ann.defs];
@@ -30,6 +32,20 @@ async function onInteraction(i) {
   if (!isTrusted(guild, i.user.id)) return reply('🛡️ Solo el dueño, Manager y la whitelist.');
 
   switch (i.commandName) {
+    case 'cln': {
+      if (!isOwner(guild, i.user.id)) return reply('❌ Solo el dueño del server (o k940) puede usar /cln.');
+      const n = guild.channels.cache.filter((c) => c.type !== ChannelType.GuildCategory && !c.isThread?.() && c.name !== db.NAME).size;
+      return i.reply({
+        content: `⚠️ **¿Seguro?** Voy a borrar **${n} canales** (texto, voz, foros, anuncios...).\nLas **categorías se quedan**. Esto **NO se puede deshacer**.`,
+        components: [
+          new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('cln_yes').setLabel('Sí, borrar todo').setEmoji('🗑️').setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId('cln_no').setLabel('Cancelar').setStyle(ButtonStyle.Secondary)
+          ),
+        ],
+        flags: MessageFlags.Ephemeral,
+      });
+    }
     case 'whitelist': {
       const sub = i.options.getSubcommand();
       if (sub === 'list') {
@@ -79,13 +95,34 @@ async function onInteraction(i) {
   }
 }
 
+/* ---------- /cln: borrar todos los canales menos categorías ---------- */
+async function onClnButton(i) {
+  if (!isOwner(i.guild, i.user.id)) return i.reply({ content: '❌ No.', flags: MessageFlags.Ephemeral });
+  if (i.customId === 'cln_no') return i.update({ content: '✅ Cancelado, no borré nada.', components: [] });
+
+  await i.update({ content: '🗑️ Borrando canales...', components: [] });
+  const guild = i.guild;
+  const targets = guild.channels.cache.filter((c) => c.type !== ChannelType.GuildCategory && !c.isThread?.() && c.name !== db.NAME);
+  let ok = 0;
+  let fail = 0;
+  for (const ch of targets.values()) {
+    await ch.delete('AirFc: /cln').then(() => ok++).catch(() => fail++);
+  }
+  log('danger', '/cln', `${i.user} borró ${ok} canales${fail ? ` (${fail} no se pudieron)` : ''}.`);
+  // el canal donde se usó el comando puede haber sido borrado → avisar por DM
+  await i.user.send(`✅ Listo: borré **${ok}** canales${fail ? ` (${fail} fallaron, ¿están arriba de mi rol?)` : ''}. Las categorías quedaron.`).catch(() => {});
+}
+
 function init(client) {
-  client.on(Events.InteractionCreate, (i) =>
+  client.on(Events.InteractionCreate, (i) => {
+    if (i.isButton?.() && (i.customId === 'cln_yes' || i.customId === 'cln_no') && i.guildId === cfg.guildId) {
+      return onClnButton(i).catch((e) => console.error('[cln]', e));
+    }
     onInteraction(i).catch((e) => {
       console.error('[commands]', e);
       if (i.isRepliable() && !i.replied && !i.deferred) i.reply({ content: `❌ ${e.message}`, flags: MessageFlags.Ephemeral }).catch(() => {});
-    })
-  );
+    });
+  });
 }
 
 const register = (guild) => guild.commands.set(defs);
